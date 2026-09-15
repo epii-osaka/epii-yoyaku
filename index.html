@@ -104,8 +104,8 @@
 <script>
 /* ===== 設定（手順書の7章で書き換えます） ===== */
 const CONFIG = {
-  LIFF_ID: '2011619064-letOFBEZ',
-  API_URL: 'https://script.google.com/macros/s/AKfycbyqe2eg-2757M_mTs6k-Ndjx5xzcLmAlXBEKYS6kaDoBQzAs-AZa0yx0p1xoKohaiNg0w/exec',
+  LIFF_ID: '2011619066-qc5x29R4',
+  API_URL: 'https://script.google.com/macros/s/AKfycbwPzn0y_PpjjOAPM3iyYDBDRptbFSMkn34OjGwY2SHK7mrzu34qT8To0kcTaeUaML1hQQ/exec',
   LINE_ID: '@784oxjnq'
 };
 /* ===== 設定ここまで ===== */
@@ -147,7 +147,10 @@ function configured() {
 
 async function api(action, extra) {
   const idToken = liff.getIDToken();
-  if (!idToken) { relogin(); throw new Error('LINEの確認をしています…'); }
+  if (!idToken) {
+    if (!liff.isInClient() && relogin()) throw new Error('LINEの確認をしています…');
+    throw new Error('LINEの本人確認の情報を受け取れませんでした。お手数ですが、お電話でご予約ください。', { cause: 'NO_ID_TOKEN' });
+  }
   let res;
   try {
     res = await fetch(CONFIG.API_URL, {
@@ -155,24 +158,35 @@ async function api(action, extra) {
       body: JSON.stringify(Object.assign({ action: action, idToken: idToken }, extra || {}))
     });
   } catch (e) {
-    throw new Error('通信できませんでした。電波の良い場所でもう一度お試しください。');
+    throw new Error('通信できませんでした。電波の良い場所でもう一度お試しください。', { cause: 'NETWORK' });
   }
-  const data = await res.json();
+  let data;
+  try {
+    data = await res.json();
+  } catch (e) {
+    throw new Error('予約システムから正しい返事がありませんでした。', { cause: 'BAD_RESPONSE ' + res.status });
+  }
   if (!data.ok) {
-    if (String(data.message).indexOf('有効期限') >= 0) { relogin(); }
-    throw new Error(data.message);
+    if (String(data.message).indexOf('有効期限') >= 0 && !liff.isInClient()) relogin();
+    throw new Error(data.message, { cause: 'SERVER' });
   }
   return data;
 }
 
+// LINEアプリの外（ブラウザ）で開いたときだけ、1分に1回までログインをやり直す
 function relogin() {
+  const last = Number(sessionStorage.getItem('epiiRelogin') || 0);
+  if (Date.now() - last < 60000) return false;
+  sessionStorage.setItem('epiiRelogin', String(Date.now()));
   try { liff.logout(); } catch (e) { /* 何もしない */ }
   liff.login({ redirectUri: location.href });
+  return true;
 }
 
-function showFatal(message) {
+function showFatal(message, detail) {
   $('app').innerHTML = `<div class="card" style="text-align:center">
     <p>${esc(message)}</p>
+    ${detail ? `<p class="sub" style="word-break:break-all">詳細：${esc(detail)}</p>` : ''}
     <button class="btn wide" onclick="location.reload()">もう一度読み込む</button>
     <p class="sub" style="margin-bottom:0">ご予約はお電話でも承ります：${telLink()}</p></div>`;
 }
@@ -181,13 +195,21 @@ function showFatal(message) {
 async function main() {
   renderAccess();
   if (!configured()) { showFatal('予約ページの設定が完了していません。'); return; }
-  try {
-    await liff.init({ liffId: CONFIG.LIFF_ID });
-  } catch (e) {
-    showFatal('LINEの読み込みに失敗しました。LINEアプリから開き直してください。');
+  if (typeof liff === 'undefined') {
+    showFatal('LINEの部品を読み込めませんでした。通信状況を確認して、開き直してください。', 'LIFF_SDK_NOT_LOADED');
     return;
   }
-  if (!liff.isLoggedIn()) { liff.login({ redirectUri: location.href }); return; }
+  try {
+    await liff.init({ liffId: CONFIG.LIFF_ID, withLoginOnExternalBrowser: true });
+  } catch (e) {
+    showFatal('LINEの読み込みに失敗しました。LINEアプリから開き直してください。', 'LIFF_INIT ' + (e && (e.code || '')) + ' ' + (e && e.message || e));
+    return;
+  }
+  if (!liff.isLoggedIn()) {
+    if (!liff.isInClient() && relogin()) return;
+    showFatal('LINEにログインできませんでした。LINEアプリから開き直してください。', 'NOT_LOGGED_IN');
+    return;
+  }
   const params = new URLSearchParams(location.search);
   S.view = params.get('view') || '';
   S.focusId = params.get('id') || '';
@@ -200,7 +222,7 @@ async function load(first) {
   try {
     S.data = await api('init');
   } catch (e) {
-    showFatal(e.message);
+    showFatal(e.message, e.cause ? String(e.cause) : '');
     return;
   }
   const cal = S.data.calendar;
@@ -566,6 +588,13 @@ async function submit() {
     $('formErr').scrollIntoView({ block: 'center' });
   }
 }
+
+window.addEventListener('error', e => {
+  if (!S.data) showFatal('ページの表示中に問題が起きました。', 'JS ' + (e.message || ''));
+});
+window.addEventListener('unhandledrejection', e => {
+  if (!S.data) showFatal('ページの表示中に問題が起きました。', 'PROMISE ' + ((e.reason && e.reason.message) || e.reason || ''));
+});
 
 main();
 </script>
