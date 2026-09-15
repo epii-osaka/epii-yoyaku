@@ -1,0 +1,573 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>épii ご予約</title>
+<meta name="robots" content="noindex">
+<link rel="icon" href="logo.webp">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@1,400;1,500&family=Shippori+Mincho:wght@400;500&family=Zen+Maru+Gothic:wght@400;500;700&display=swap" rel="stylesheet">
+<script charset="utf-8" src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
+<style>
+  :root {
+    --bg: #F3F2EF; --card: #FFFFFF; --ink: #1F1F1F; --sub: #6F6D69; --faint: #BDBAB4; --line: #E4E2DD;
+    --red: #AE3F2C; --red-l: #F7E8E4; --blue: #3F7485; --blue-l: #E6EFF2; --green: #3F7D58; --green-l: #E6F1EA;
+  }
+  * { box-sizing: border-box; }
+  html { -webkit-text-size-adjust: 100%; }
+  body { margin: 0; background: var(--bg); color: var(--ink); font-family: 'Zen Maru Gothic', 'Hiragino Sans', sans-serif; font-size: 15px; line-height: 1.7; }
+  button, input, select, textarea { font: inherit; color: inherit; }
+  button { cursor: pointer; }
+  a { color: inherit; }
+  .min { font-family: 'Shippori Mincho', serif; }
+  .lat { font-family: 'Cormorant Garamond', serif; font-style: italic; }
+  .wrap { max-width: 520px; margin: 0 auto; padding: 0 16px calc(40px + env(safe-area-inset-bottom)); }
+  .hero { text-align: center; padding: 28px 0 14px; }
+  .hero img { width: 150px; height: auto; display: block; margin: 0 auto; }
+  .hero .en { letter-spacing: .3em; font-size: 11px; color: var(--sub); margin-top: 6px; }
+  .card { background: var(--card); border-radius: 20px; padding: 18px; margin-bottom: 12px; }
+  .h { font-family: 'Shippori Mincho', serif; font-size: 17px; margin: 0 0 10px; display: flex; align-items: baseline; gap: 10px; font-weight: 500; }
+  .h small { font-family: 'Cormorant Garamond', serif; font-style: italic; color: var(--sub); font-size: 15px; font-weight: 400; }
+  .sub { color: var(--sub); font-size: 13px; }
+  .note { background: var(--blue-l); color: var(--blue); border-radius: 14px; padding: 10px 14px; font-size: 13px; text-align: center; margin-bottom: 12px; }
+  .alert { background: var(--red-l); color: var(--red); border-radius: 14px; padding: 12px 14px; font-size: 14px; margin-bottom: 12px; }
+  .btn { display: inline-flex; align-items: center; justify-content: center; gap: 6px; border: 1px solid var(--line); background: var(--card); border-radius: 999px; padding: 10px 16px; text-decoration: none; }
+  .btn.primary { background: var(--red); border-color: var(--red); color: #fff; font-weight: 700; letter-spacing: .06em; }
+  .btn.dark { background: var(--ink); border-color: var(--ink); color: #fff; }
+  .btn.wide { width: 100%; }
+  .btn.big { padding: 15px; font-size: 16px; }
+  .btn[disabled] { opacity: .5; cursor: wait; }
+  .stepper { display: flex; align-items: center; gap: 14px; }
+  .stepper button { width: 40px; height: 40px; border-radius: 50%; border: 1px solid var(--line); background: var(--card); font-size: 20px; line-height: 1; }
+  .stepper .n { font-family: 'Shippori Mincho', serif; font-size: 24px; min-width: 28px; text-align: center; }
+  .monthnav { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; }
+  .monthnav button { width: 36px; height: 36px; border-radius: 50%; border: 1px solid var(--line); background: var(--card); }
+  .monthnav button:disabled { visibility: hidden; }
+  .cal { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 3px; text-align: center; }
+  .cal .wd { font-size: 12px; color: var(--sub); padding: 2px 0; }
+  .cal .wd.sun { color: var(--red); }
+  .day { border: none; background: transparent; border-radius: 12px; padding: 6px 0 4px; line-height: 1.25; min-height: 48px; }
+  .day small { display: block; font-size: 12px; color: var(--blue); }
+  .day.x { color: var(--faint); cursor: default; }
+  .day.x small { color: var(--faint); font-size: 11px; }
+  .day.sel { background: var(--ink); color: #fff; }
+  .day.sel small { color: #fff; }
+  .legend { display: flex; flex-wrap: wrap; gap: 4px 12px; font-size: 12px; color: var(--sub); margin-top: 8px; }
+  .sess { font-family: 'Cormorant Garamond', serif; font-style: italic; color: var(--sub); margin: 8px 0 4px; font-size: 16px; }
+  .slots { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 6px; }
+  .slot { border: 1px solid var(--line); background: var(--card); border-radius: 14px; padding: 8px 0; line-height: 1.25; }
+  .slot small { display: block; font-size: 11px; color: var(--sub); }
+  .slot.sel { background: var(--ink); border-color: var(--ink); color: #fff; }
+  .slot.sel small { color: #fff; }
+  .slot:disabled { background: var(--bg); border-color: transparent; color: var(--faint); cursor: default; }
+  .slot:disabled small { color: var(--faint); }
+  .course { display: block; width: 100%; text-align: left; border: 1px solid var(--line); background: var(--card); border-radius: 16px; padding: 12px 14px; margin-bottom: 8px; }
+  .course.sel { border: 2px solid var(--ink); padding: 11px 13px; }
+  .course .name { font-family: 'Shippori Mincho', serif; font-size: 16px; }
+  label.f { display: block; font-size: 13px; color: var(--sub); margin: 12px 0 4px; }
+  input[type=text], input[type=tel], select, textarea { width: 100%; padding: 11px 13px; border: 1px solid var(--line); border-radius: 14px; background: var(--card); font-size: 16px; }
+  input:focus, select:focus, textarea:focus, button:focus-visible, a:focus-visible { outline: 2px solid var(--blue); outline-offset: 1px; }
+  .tag { display: inline-block; padding: 0 10px; border-radius: 999px; font-size: 12px; line-height: 22px; background: var(--blue-l); color: var(--blue); }
+  .tag.red { background: var(--red-l); color: var(--red); }
+  .tag.green { background: var(--green-l); color: var(--green); }
+  .kv { display: grid; grid-template-columns: 70px minmax(0, 1fr); gap: 2px 10px; margin: 8px 0; font-size: 14px; }
+  .kv dt { color: var(--sub); }
+  .kv dd { margin: 0; }
+  .mine { border-top: 1px solid var(--line); padding: 14px 0 4px; }
+  .mine:first-of-type { border-top: none; padding-top: 4px; }
+  .mine.focus { background: var(--blue-l); margin: 0 -10px; padding: 12px 10px; border-radius: 14px; }
+  .actions { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 8px; }
+  .actions .btn { flex: 1; }
+  .summary { text-align: center; font-family: 'Shippori Mincho', serif; margin: 6px 0 12px; }
+  .err { color: var(--red); font-size: 14px; min-height: 1.2em; margin: 8px 0 0; text-align: center; }
+  .access .row { display: flex; gap: 10px; padding: 8px 0; border-top: 1px solid var(--line); }
+  .loading { text-align: center; padding: 60px 0; color: var(--sub); }
+  .spinner { width: 28px; height: 28px; border-radius: 50%; border: 3px solid var(--line); border-top-color: var(--red); margin: 0 auto 10px; animation: spin 1s linear infinite; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .toast { position: fixed; left: 50%; bottom: calc(24px + env(safe-area-inset-bottom)); transform: translateX(-50%); background: var(--ink); color: #fff; padding: 10px 18px; border-radius: 20px; font-size: 14px; opacity: 0; transition: opacity .2s; pointer-events: none; max-width: 90vw; }
+  .toast.show { opacity: 1; }
+  @media (prefers-reduced-motion: reduce) { .spinner { animation: none; } * { transition: none !important; } }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="hero">
+    <img src="logo.webp" alt="épii" width="150" height="227">
+    <div class="en">FRENCH × 薬膳</div>
+  </div>
+  <div id="app"><div class="loading"><div class="spinner"></div>読み込み中…</div></div>
+  <div id="access"></div>
+</div>
+<div class="toast" id="toast" role="status"></div>
+
+<script>
+/* ===== 設定（手順書の7章で書き換えます） ===== */
+const CONFIG = {
+  LIFF_ID: 'ここにLIFF IDを入れる',
+  API_URL: 'ここにGASのウェブアプリURLを入れる',
+  LINE_ID: 'ここにLINE公式アカウントのベーシックIDを入れる（@から始まるID）'
+};
+/* ===== 設定ここまで ===== */
+
+const SHOP = {
+  tel: '050-1720-7788',
+  zip: '〒545-0011',
+  address: '大阪府大阪市阿倍野区 1-16-20',
+  building: '第三昭和町マンション1階',
+  mapQuery: '大阪府大阪市阿倍野区 1-16-20 第三昭和町マンション'
+};
+const WD = '日月火水木金土';
+const S = {
+  data: null, profile: null, friend: true, view: '', focusId: '',
+  month: '', guests: 2, date: '', time: '', course: '', alt: '',
+  name: '', phone: '', note: '', err: '', confirmCancel: '', busy: false, done: null
+};
+const $ = id => document.getElementById(id);
+
+/* ---------- 共通 ---------- */
+function esc(v) {
+  return String(v === undefined || v === null ? '' : v)
+    .replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+}
+function wd(date) { const p = date.split('-').map(Number); return new Date(Date.UTC(p[0], p[1] - 1, p[2])).getUTCDay(); }
+function jd(date) { if (!date) return ''; const p = date.split('-').map(Number); return p[1] + '月' + p[2] + '日（' + WD[wd(date)] + '）'; }
+function yen(n) { return '¥' + Number(n || 0).toLocaleString(); }
+function toast(msg) {
+  const t = $('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  clearTimeout(toast.timer);
+  toast.timer = setTimeout(() => t.classList.remove('show'), 2600);
+}
+function telLink(text) { return `<a href="tel:${SHOP.tel}">${text || SHOP.tel}</a>`; }
+function configured() {
+  return CONFIG.LIFF_ID.indexOf('ここに') < 0 && /^https?:\/\//.test(CONFIG.API_URL);
+}
+
+async function api(action, extra) {
+  const idToken = liff.getIDToken();
+  if (!idToken) { relogin(); throw new Error('LINEの確認をしています…'); }
+  let res;
+  try {
+    res = await fetch(CONFIG.API_URL, {
+      method: 'POST',
+      body: JSON.stringify(Object.assign({ action: action, idToken: idToken }, extra || {}))
+    });
+  } catch (e) {
+    throw new Error('通信できませんでした。電波の良い場所でもう一度お試しください。');
+  }
+  const data = await res.json();
+  if (!data.ok) {
+    if (String(data.message).indexOf('有効期限') >= 0) { relogin(); }
+    throw new Error(data.message);
+  }
+  return data;
+}
+
+function relogin() {
+  try { liff.logout(); } catch (e) { /* 何もしない */ }
+  liff.login({ redirectUri: location.href });
+}
+
+function showFatal(message) {
+  $('app').innerHTML = `<div class="card" style="text-align:center">
+    <p>${esc(message)}</p>
+    <button class="btn wide" onclick="location.reload()">もう一度読み込む</button>
+    <p class="sub" style="margin-bottom:0">ご予約はお電話でも承ります：${telLink()}</p></div>`;
+}
+
+/* ---------- 起動 ---------- */
+async function main() {
+  renderAccess();
+  if (!configured()) { showFatal('予約ページの設定が完了していません。'); return; }
+  try {
+    await liff.init({ liffId: CONFIG.LIFF_ID });
+  } catch (e) {
+    showFatal('LINEの読み込みに失敗しました。LINEアプリから開き直してください。');
+    return;
+  }
+  if (!liff.isLoggedIn()) { liff.login({ redirectUri: location.href }); return; }
+  const params = new URLSearchParams(location.search);
+  S.view = params.get('view') || '';
+  S.focusId = params.get('id') || '';
+  try { S.profile = await liff.getProfile(); S.name = S.profile.displayName || ''; } catch (e) { S.profile = null; }
+  try { S.friend = (await liff.getFriendship()).friendFlag; } catch (e) { S.friend = true; }
+  await load(true);
+}
+
+async function load(first) {
+  try {
+    S.data = await api('init');
+  } catch (e) {
+    showFatal(e.message);
+    return;
+  }
+  const cal = S.data.calendar;
+  if (!S.month) S.month = cal[0].date.slice(0, 7);
+  if (S.date && !dayOf(S.date)) S.date = '';
+  S.guests = Math.min(S.guests, S.data.settings.maxGuests);
+  render();
+  if (first && (S.view === 'mine' || S.view === 'offer')) {
+    const el = document.querySelector('.mine.focus') || $('mineCard');
+    if (el) el.scrollIntoView({ block: 'center' });
+  }
+}
+
+/* ---------- 空き状況の計算 ---------- */
+function dayOf(date) { return S.data.calendar.find(d => d.date === date); }
+function openSlots(day) { return day.closed ? [] : day.slots.filter(x => x.left >= S.guests); }
+function dayState(day) {
+  if (day.closed) return { x: true, label: '締切' };
+  if (day.pattern === 'off') return { x: true, label: '休' };
+  if (day.pattern === 'private') return { x: true, label: '貸切' };
+  if (!day.slots.length) return { x: true, label: '—' };
+  const n = openSlots(day).length;
+  if (!n) return { x: true, label: '×' };
+  return { x: false, label: n <= 2 ? '△' : '○' };
+}
+function sessionOf(time) {
+  const s = S.data.settings;
+  return time < s.dinner.first ? 'lunch' : 'dinner';
+}
+function courseList() {
+  if (!S.time) return [];
+  const sess = sessionOf(S.time);
+  return S.data.courses.filter(c => (c.session === 'both' || c.session === sess) && c.minGuests <= S.guests);
+}
+function altOptions() {
+  if (!S.date || !S.time) return [];
+  const out = [];
+  const sess = sessionOf(S.time);
+  const days = S.data.calendar.filter(d => d.date >= S.date);
+  for (const d of days) {
+    for (const x of openSlots(d)) {
+      if (d.date === S.date && x.time === S.time) continue;
+      if (x.session !== sess) continue;
+      out.push(d.date + ' ' + x.time);
+      if (out.length >= 12) return out;
+    }
+  }
+  return out;
+}
+function fixSelection() {
+  if (S.date) {
+    const day = dayOf(S.date);
+    if (!day || dayState(day).x) { S.date = ''; S.time = ''; }
+  }
+  if (S.time && !(S.date && openSlots(dayOf(S.date)).some(x => x.time === S.time))) S.time = '';
+  if (S.course && !courseList().some(c => c.name === S.course)) S.course = '';
+  if (S.alt && altOptions().indexOf(S.alt) < 0) S.alt = '';
+}
+
+/* ---------- 表示 ---------- */
+function render() {
+  if (S.done) { renderDone(); return; }
+  fixSelection();
+  const st = S.data.settings;
+  let h = '';
+  if (!S.friend) {
+    h += `<div class="alert">お店からの返事はLINEでお送りします。先に友だち追加をお願いします。
+      <a class="btn wide" style="margin-top:8px;background:#fff" href="https://line.me/R/ti/p/${encodeURIComponent(CONFIG.LINE_ID)}">épiiを友だち追加する</a>
+      <button class="btn wide" style="margin-top:6px;background:transparent;border-color:transparent;color:inherit;font-size:13px" data-act="recheck">追加したので確認する</button></div>`;
+  }
+  h += mineHtml();
+  h += `<div class="note">ご予約はリクエスト制です。お店が確認して、${esc(st.replyHint)}にLINEでお返事します。<br>
+    ${st.cutoffDays ? 'ご来店の' + st.cutoffDays + '日前まで' : '当日まで'}、${st.aheadDays}日先までのご予約を承ります。</div>`;
+  h += `<div class="card"><div class="h">人数<small>Personnes</small></div>
+    <div class="stepper"><button data-act="guests" data-d="-1" aria-label="人数を減らす">−</button><span class="n">${S.guests}</span>名<button data-act="guests" data-d="1" aria-label="人数を増やす">＋</button></div>
+    <div class="sub" style="margin-top:6px">${st.maxGuests + 1}名以上のご予約は${telLink('お電話')}で承ります。</div></div>`;
+  h += `<div class="card"><div class="h">日付<small>Date</small></div>${calendarHtml()}</div>`;
+  h += `<div class="card"><div class="h">時間<small>Heure</small></div>${timesHtml()}</div>`;
+  h += `<div class="card"><div class="h">コース<small>Menu</small></div>${coursesHtml()}</div>`;
+  h += `<div class="card"><div class="h">第2希望<small>任意</small></div>${altHtml()}</div>`;
+  h += `<div class="card"><div class="h">お客様情報<small>Coordonnées</small></div>
+    <label class="f" for="fName">お名前</label><input id="fName" type="text" autocomplete="name" value="${esc(S.name)}" placeholder="山田 花子">
+    <label class="f" for="fPhone">電話番号</label><input id="fPhone" type="tel" autocomplete="tel" inputmode="tel" value="${esc(S.phone)}" placeholder="090-1234-5678">
+    <label class="f" for="fNote">ご要望（任意）</label><textarea id="fNote" rows="3" placeholder="アレルギー、苦手な食材、お祝いの内容など">${esc(S.note)}</textarea>
+    <div class="sub" style="margin-top:8px">ご入力いただいた情報は、ご予約の管理とご連絡にのみ使用します。</div></div>`;
+  h += `<div class="summary">${summaryText()}</div>
+    <button class="btn primary wide big" data-act="submit" ${S.busy ? 'disabled' : ''}>${S.busy ? '送信しています…' : '予約をリクエストする'}</button>
+    <p class="err" id="formErr" role="alert">${esc(S.err)}</p>`;
+  $('app').innerHTML = h;
+}
+
+function summaryText() {
+  if (!S.date || !S.time) return '<span class="sub">日付・時間・コースをお選びください</span>';
+  const c = S.data.courses.find(x => x.name === S.course);
+  return `${jd(S.date)} ${S.time}・${S.guests}名` + (c ? `<br>${esc(c.name)}　${yen(c.price * S.guests)}` : '');
+}
+
+function mineHtml() {
+  const list = S.data.mine;
+  if (!list.length) return '';
+  const st = S.data.settings;
+  return `<div class="card" id="mineCard"><div class="h">ご予約・リクエスト<small>Vos réservations</small></div>` +
+    list.map(r => {
+      const focus = r.id === S.focusId ? 'focus' : '';
+      const confirming = S.confirmCancel === r.id;
+      let tag, body, actions;
+      if (r.status === '返事待ち') {
+        tag = '<span class="tag">お返事待ち</span>';
+        body = `<div class="sub">お店からLINEでお返事します（目安：${esc(st.replyHint)}）。</div>`;
+        actions = confirming ? confirmHtml(r, 'リクエストを取り下げますか？', '取り下げる')
+          : `<div class="actions"><button class="btn" data-act="askCancel" data-id="${esc(r.id)}">リクエストを取り下げる</button></div>`;
+      } else if (r.status === '提案中') {
+        tag = '<span class="tag red">お店からのご提案</span>';
+        body = `<div style="margin-top:6px">ご希望の日時はお席のご用意が難しいため、こちらの日時をご提案します。</div>
+          <div class="min" style="font-size:18px;margin:4px 0">${jd(r.offerDate)} ${esc(r.offerTime)}</div>`;
+        actions = confirming ? confirmHtml(r, 'このご提案を見送りますか？', '見送る')
+          : `<div class="actions"><button class="btn primary" data-act="accept" data-id="${esc(r.id)}">この日時で予約する</button>
+             <button class="btn" data-act="askCancel" data-id="${esc(r.id)}">見送る</button></div>`;
+      } else {
+        tag = '<span class="tag green">ご予約確定</span>';
+        body = '';
+        actions = !r.canCancel
+          ? `<div class="sub">${st.cancelDays ? 'ご来店の' + st.cancelDays + '日前を過ぎたため、' : ''}キャンセル・変更は${telLink('お電話')}でお願いいたします。</div>`
+          : confirming ? confirmHtml(r, 'ご予約をキャンセルしますか？', 'キャンセルする')
+          : `<div class="actions"><button class="btn" data-act="askCancel" data-id="${esc(r.id)}">キャンセルする</button></div>
+             <div class="sub">変更をご希望の場合は、キャンセルしてから新しくリクエストするか、${telLink('お電話')}でご相談ください。</div>`;
+      }
+      return `<div class="mine ${focus}">${tag}
+        <dl class="kv">
+          <dt>${r.status === '確定' ? '日時' : 'ご希望'}</dt><dd>${jd(r.date)} ${esc(r.time)}</dd>
+          ${r.status === '返事待ち' && r.altDate ? `<dt>第2希望</dt><dd>${jd(r.altDate)} ${esc(r.altTime)}</dd>` : ''}
+          <dt>人数</dt><dd>${r.guests}名</dd>
+          <dt>コース</dt><dd>${esc(r.course)}</dd>
+        </dl>${body}${actions}</div>`;
+    }).join('') + '</div>';
+}
+
+function confirmHtml(r, question, label) {
+  return `<div style="background:var(--bg);border-radius:14px;padding:12px;margin-top:8px">
+    <div>${question}</div>
+    <div class="actions"><button class="btn" data-act="noCancel">やめる</button>
+    <button class="btn dark" data-act="doCancel" data-id="${esc(r.id)}" data-status="${esc(r.status)}">${label}</button></div></div>`;
+}
+
+function calendarHtml() {
+  const cal = S.data.calendar;
+  const firstMonth = cal[0].date.slice(0, 7);
+  const lastMonth = cal[cal.length - 1].date.slice(0, 7);
+  const [y, m] = S.month.split('-').map(Number);
+  const days = new Date(Date.UTC(y, m, 0)).getUTCDate();
+  let cells = WD.split('').map((w, i) => `<div class="wd ${i === 0 ? 'sun' : ''}">${w}</div>`).join('');
+  cells += '<div></div>'.repeat(wd(S.month + '-01'));
+  for (let d = 1; d <= days; d++) {
+    const date = S.month + '-' + String(d).padStart(2, '0');
+    const day = dayOf(date);
+    if (!day) { cells += `<button class="day x" disabled aria-hidden="true">${d}<small>&nbsp;</small></button>`; continue; }
+    const st = dayState(day);
+    cells += `<button class="day ${st.x ? 'x' : ''} ${S.date === date ? 'sel' : ''}" data-act="date" data-date="${date}" ${st.x ? 'aria-disabled="true"' : ''} aria-label="${jd(date)} ${st.label}">${d}<small>${st.label}</small></button>`;
+  }
+  return `<div class="monthnav">
+      <button data-act="month" data-d="-1" ${S.month <= firstMonth ? 'disabled' : ''} aria-label="前の月">‹</button>
+      <span class="min" style="font-size:17px">${y}年 ${m}月</span>
+      <button data-act="month" data-d="1" ${S.month >= lastMonth ? 'disabled' : ''} aria-label="次の月">›</button>
+    </div>
+    <div class="cal">${cells}</div>
+    <div class="legend"><span>○ 空きあり</span><span>△ 残りわずか</span><span>× 満席</span><span>休 お休み</span><span>締切 受付終了</span></div>`;
+}
+
+function timesHtml() {
+  if (!S.date) return '<div class="sub">カレンダーから日付をお選びください。</div>';
+  const day = dayOf(S.date);
+  const st = S.data.settings;
+  const names = { lunch: ['Déjeuner', 'ランチ'], dinner: ['Dîner', 'ディナー'] };
+  let h = `<div class="sub">${jd(S.date)}</div>`;
+  ['lunch', 'dinner'].forEach(k => {
+    const list = day.slots.filter(x => x.session === k);
+    if (!list.length) return;
+    h += `<div class="sess">${names[k][0]} <span class="sub" style="font-style:normal;font-family:inherit">${names[k][1]} ${st[k].open}〜${st[k].close}</span></div>
+      <div class="slots">${list.map(x => {
+        const ok = x.left >= S.guests;
+        return `<button class="slot ${S.time === x.time ? 'sel' : ''}" data-act="time" data-time="${x.time}" ${ok ? '' : 'disabled'}>${x.time}<small>${ok ? (x.left - S.guests <= 4 ? '残りわずか' : '空きあり') : '満席'}</small></button>`;
+      }).join('')}</div>`;
+  });
+  return h;
+}
+
+function coursesHtml() {
+  if (!S.time) return '<div class="sub">時間を選ぶと、ご案内できるコースが表示されます。</div>';
+  const list = courseList();
+  const hidden = S.data.courses.filter(c => (c.session === 'both' || c.session === sessionOf(S.time)) && c.minGuests > S.guests);
+  let h = list.length ? list.map(c => `<button class="course ${S.course === c.name ? 'sel' : ''}" data-act="course" data-name="${esc(c.name)}">
+      <div class="name">${esc(c.name)}</div>
+      <div>${yen(c.price)}<span class="sub"> ／1名</span></div>
+      ${c.description ? `<div class="sub">${esc(c.description)}</div>` : ''}
+      ${c.minGuests > 1 ? `<div class="sub">${c.minGuests}名様から</div>` : ''}
+    </button>`).join('') : `<div class="sub">この時間帯にご案内できるコースがありません。${telLink('お電話')}でお問い合わせください。</div>`;
+  if (hidden.length) h += `<div class="sub">${hidden.map(c => '「' + esc(c.name) + '」は' + c.minGuests + '名様から').join('、')}承ります。</div>`;
+  return h;
+}
+
+function altHtml() {
+  if (!S.time) return '<div class="sub">第1希望の時間を選ぶと選べます。</div>';
+  const opts = altOptions();
+  if (!opts.length) return '<div class="sub">ほかに空いている日時がありません。</div>';
+  return `<select id="fAlt" aria-label="第2希望の日時"><option value="">なし</option>${opts.map(o => {
+    const [d, t] = o.split(' ');
+    return `<option value="${o}" ${S.alt === o ? 'selected' : ''}>${jd(d)} ${t}</option>`;
+  }).join('')}</select><div class="sub" style="margin-top:6px">第1希望が難しい場合に、こちらでご案内します。</div>`;
+}
+
+function renderDone() {
+  const r = S.done;
+  const c = S.data.courses.find(x => x.name === r.course);
+  $('app').innerHTML = `<div class="card" style="text-align:center;padding:28px 20px">
+    <div class="lat" style="font-size:30px;color:var(--red)">Merci</div>
+    <div class="min" style="font-size:19px">リクエストを受け付けました</div>
+    <div class="note" style="margin:14px 0">まだご予約は確定していません。<br>お店が確認して、${esc(S.data.settings.replyHint)}にLINEでお返事します。</div>
+    <dl class="kv" style="text-align:left">
+      <dt>第1希望</dt><dd>${jd(r.date)} ${esc(r.time)}</dd>
+      ${r.altDate ? `<dt>第2希望</dt><dd>${jd(r.altDate)} ${esc(r.altTime)}</dd>` : ''}
+      <dt>人数</dt><dd>${r.guests}名</dd>
+      <dt>コース</dt><dd>${esc(r.course)}${c ? '（' + yen(c.price * r.guests) + '）' : ''}</dd>
+      <dt>お名前</dt><dd>${esc(r.name)} 様</dd>
+    </dl>
+    ${liff.isInClient() ? '<button class="btn dark wide" data-act="close" style="margin-top:8px">LINEのトークに戻る</button>' : ''}
+    <button class="btn wide" data-act="back" style="margin-top:8px">予約ページに戻る</button>
+  </div>`;
+  window.scrollTo(0, 0);
+}
+
+function renderAccess() {
+  const map = 'https://www.google.com/maps/search/?api=1&query=' + encodeURIComponent(SHOP.mapQuery);
+  $('access').innerHTML = `<div class="card access" style="margin-top:20px">
+    <div class="h">アクセス<small>Accès</small></div>
+    <div class="lat" style="font-size:26px;line-height:1">épii</div>
+    <div class="sub" style="margin:6px 0 10px">${SHOP.zip}<br>${SHOP.address}<br>${SHOP.building}</div>
+    <div class="row"><span style="color:var(--red)">●</span><div><div>御堂筋線 昭和町駅</div><div class="sub">3番出口から徒歩1分</div></div></div>
+    <div class="row"><span style="color:var(--blue)">●</span><div><div>谷町線 文の里駅</div><div class="sub">7番出口から文の里商店街を通って徒歩6分</div></div></div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:10px">
+      <a class="btn" href="tel:${SHOP.tel}">${SHOP.tel}</a>
+      <a class="btn" href="${map}" target="_blank" rel="noopener">地図を開く</a>
+    </div></div>`;
+}
+
+/* ---------- 操作 ---------- */
+function keepInputs() {
+  if ($('fName')) {
+    S.name = $('fName').value;
+    S.phone = $('fPhone').value;
+    S.note = $('fNote').value;
+  }
+}
+
+document.addEventListener('click', async e => {
+  const b = e.target.closest('[data-act]');
+  if (!b || !S.data) return;
+  const a = b.dataset.act;
+  keepInputs();
+  if (a === 'guests') {
+    S.guests = Math.max(1, Math.min(S.data.settings.maxGuests, S.guests + Number(b.dataset.d)));
+    S.err = '';
+    render();
+  } else if (a === 'month') {
+    const [y, m] = S.month.split('-').map(Number);
+    const d = new Date(Date.UTC(y, m - 1 + Number(b.dataset.d), 1));
+    S.month = d.getUTCFullYear() + '-' + String(d.getUTCMonth() + 1).padStart(2, '0');
+    render();
+  } else if (a === 'date') {
+    if (dayState(dayOf(b.dataset.date)).x) return;
+    S.date = b.dataset.date; S.time = ''; S.alt = ''; S.err = '';
+    render();
+  } else if (a === 'time') {
+    S.time = b.dataset.time; S.alt = ''; S.err = '';
+    render();
+  } else if (a === 'course') {
+    S.course = b.dataset.name; S.err = '';
+    render();
+  } else if (a === 'submit') {
+    await submit();
+  } else if (a === 'askCancel') {
+    S.confirmCancel = b.dataset.id;
+    render();
+  } else if (a === 'noCancel') {
+    S.confirmCancel = '';
+    render();
+  } else if (a === 'doCancel') {
+    b.disabled = true;
+    try {
+      const status = b.dataset.status;
+      await api(status === '提案中' ? 'declineOffer' : 'cancel', { id: b.dataset.id });
+      S.confirmCancel = '';
+      toast(status === '確定' ? 'ご予約をキャンセルしました' : status === '提案中' ? 'ご提案を見送りました' : 'リクエストを取り下げました');
+      await load(false);
+    } catch (err) { b.disabled = false; alert(err.message); }
+  } else if (a === 'accept') {
+    b.disabled = true;
+    b.textContent = '確定しています…';
+    try {
+      await api('acceptOffer', { id: b.dataset.id });
+      toast('ご予約が確定しました');
+      await load(false);
+    } catch (err) { alert(err.message); await load(false); }
+  } else if (a === 'recheck') {
+    try { S.friend = (await liff.getFriendship()).friendFlag; } catch (err) { S.friend = true; }
+    if (!S.friend) toast('まだ友だち追加が確認できません');
+    render();
+  } else if (a === 'close') {
+    liff.closeWindow();
+  } else if (a === 'back') {
+    S.done = null;
+    S.date = ''; S.time = ''; S.course = ''; S.alt = ''; S.note = '';
+    $('app').innerHTML = '<div class="loading"><div class="spinner"></div>読み込み中…</div>';
+    await load(false);
+    window.scrollTo(0, 0);
+  }
+});
+
+document.addEventListener('change', e => {
+  if (e.target.id === 'fAlt') S.alt = e.target.value;
+});
+
+document.addEventListener('input', e => {
+  if ((e.target.id === 'fName' || e.target.id === 'fPhone') && S.err) {
+    S.err = '';
+    const el = $('formErr');
+    if (el) el.textContent = '';
+  }
+});
+
+async function submit() {
+  const err = !S.date ? '日付をお選びください。'
+    : !S.time ? '時間をお選びください。'
+    : !S.course ? 'コースをお選びください。'
+    : !S.name.trim() ? 'お名前をご入力ください。'
+    : S.phone.replace(/\D/g, '').length < 10 ? '電話番号を正しくご入力ください。'
+    : !S.friend ? '先にépiiを友だち追加してください（お返事をLINEでお送りするため）。'
+    : '';
+  if (err) {
+    S.err = err;
+    render();
+    $('formErr').scrollIntoView({ block: 'center' });
+    return;
+  }
+  S.busy = true;
+  S.err = '';
+  render();
+  const [altDate, altTime] = S.alt ? S.alt.split(' ') : ['', ''];
+  try {
+    const res = await api('request', {
+      data: {
+        date: S.date, time: S.time, guests: S.guests, course: S.course,
+        name: S.name, phone: S.phone, note: S.note, altDate: altDate, altTime: altTime
+      }
+    });
+    S.done = res.reservation;
+    S.busy = false;
+    render();
+  } catch (e) {
+    S.busy = false;
+    S.err = e.message;
+    try { S.data = await api('init'); } catch (e2) { /* 表示はそのまま */ }
+    render();
+    $('formErr').scrollIntoView({ block: 'center' });
+  }
+}
+
+main();
+</script>
+</body>
+</html>
